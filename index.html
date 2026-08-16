@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gmail Viewer</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+  <h1>Gmail Viewer</h1>
+
+  <button id="authBtn" onclick="handleAuthClick()">Connect Gmail</button>
+  <button id="signoutBtn" onclick="handleSignoutClick()" style="display:none;">Disconnect</button>
+
+  <p id="status"></p>
+
+  <hr>
+
+  <h2>Inbox</h2>
+  <div id="emailList"></div>
+
+  <script>
+    let tokenClient;
+    let accessToken = null;
+    const SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+    const CLIENT_ID = "150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com";
+
+    function initTokenClient() {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        callback: (tokenResponse) => {
+          accessToken = tokenResponse.access_token;
+          document.getElementById('authBtn').style.display = 'none';
+          document.getElementById('signoutBtn').style.display = 'inline-block';
+          document.getElementById('status').innerText = "Connected. Loading emails...";
+          listMessages();
+        },
+      });
+    }
+
+    function handleAuthClick() {
+      if (!tokenClient) {
+        initTokenClient();
+      }
+      tokenClient.requestAccessToken();
+    }
+
+    function handleSignoutClick() {
+      if (accessToken) {
+        google.accounts.oauth2.revoke(accessToken, () => {
+          accessToken = null;
+          document.getElementById('authBtn').style.display = 'inline-block';
+          document.getElementById('signoutBtn').style.display = 'none';
+          document.getElementById('emailList').innerHTML = '';
+          document.getElementById('status').innerText = "Disconnected.";
+        });
+      }
+    }
+
+    async function listMessages() {
+      try {
+        const listRes = await fetch(
+          "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=15",
+          { headers: { Authorization: "Bearer " + accessToken } }
+        );
+        const listData = await listRes.json();
+
+        if (!listData.messages) {
+          document.getElementById('status').innerText = "No messages found.";
+          return;
+        }
+
+        document.getElementById('status').innerText = "Loaded " + listData.messages.length + " messages.";
+        const container = document.getElementById('emailList');
+        container.innerHTML = '';
+
+        for (const msg of listData.messages) {
+          const detailRes = await fetch(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + msg.id + "?format=metadata&metadataHeaders=From&metadataHeaders=Subject",
+            { headers: { Authorization: "Bearer " + accessToken } }
+          );
+          const detail = await detailRes.json();
+
+          let subject = "(no subject)";
+          let from = "(unknown sender)";
+          if (detail.payload && detail.payload.headers) {
+            for (const h of detail.payload.headers) {
+              if (h.name === "Subject") subject = h.value;
+              if (h.name === "From") from = h.value;
+            }
+          }
+
+          const div = document.createElement('div');
+          div.style.borderBottom = "1px solid #ccc";
+          div.style.padding = "8px 0";
+          div.innerHTML =
+            "<strong>" + escapeHtml(subject) + "</strong><br>" +
+            "From: " + escapeHtml(from) + "<br>" +
+            "<span style='color:#666;'>" + escapeHtml(detail.snippet || "") + "</span>";
+          container.appendChild(div);
+        }
+      } catch (err) {
+        document.getElementById('status').innerText = "Error loading messages: " + err;
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.innerText = str;
+      return div.innerHTML;
+    }
+  </script>
+
+</body>
+</html>
