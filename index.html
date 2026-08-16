@@ -2,28 +2,273 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gmail Viewer</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    --blue: #0a66c2;
+    --blue-dark: #08498f;
+    --ink: #1b1b1b;
+    --ink-soft: #55585c;
+    --line: #d9dce0;
+    --line-soft: #eceef1;
+    --panel: #ffffff;
+    --bg: #f3f4f6;
+    --unread-dot: #0a66c2;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", "Segoe UI Web", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+
+  header img.logo {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+
+  header h1 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.1px;
+  }
+
+  header .spacer { flex: 1; }
+
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .btn:hover { background: var(--line-soft); }
+
+  .btn.primary {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  .btn.primary:hover { background: var(--blue-dark); }
+
+  #status {
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 4px 20px 0 20px;
+  }
+
+  main {
+    display: flex;
+    height: calc(100vh - 54px);
+  }
+
+  #emailList {
+    width: 380px;
+    min-width: 280px;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    overflow-y: auto;
+  }
+
+  .email-item {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    cursor: pointer;
+  }
+
+  .email-item:hover { background: var(--line-soft); }
+
+  .email-item.selected {
+    background: #eaf2fb;
+    border-left: 3px solid var(--blue);
+    padding-left: 13px;
+  }
+
+  .email-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--unread-dot);
+    margin-top: 6px;
+    flex-shrink: 0;
+    visibility: hidden;
+  }
+
+  .email-item.unread .dot { visibility: visible; }
+
+  .email-item .content { flex: 1; min-width: 0; }
+
+  .email-item .row-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .email-item .from {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .email-item.unread .from { font-weight: 700; }
+
+  .email-item .date {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .email-item .subject {
+    font-size: 13px;
+    color: var(--ink);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .email-item.unread .subject { font-weight: 600; }
+
+  .email-item .snippet {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #detailPanel {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+    padding: 28px 36px;
+  }
+
+  #detailEmpty {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-top: 60px;
+    text-align: center;
+  }
+
+  .detail-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 24px 28px;
+    max-width: 760px;
+  }
+
+  .detail-subject {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 14px 0;
+  }
+
+  .detail-meta {
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    padding: 12px 0;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .detail-meta .meta-row {
+    display: flex;
+    gap: 8px;
+    margin: 2px 0;
+  }
+
+  .detail-meta .meta-label {
+    width: 46px;
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .detail-body {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .loading-row {
+    padding: 16px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+</style>
 </head>
 <body>
 
-  <h1>Gmail Viewer</h1>
+  <header>
+    <img class="logo" src="Logo.png" alt="Logo">
+    <h1>Gmail Viewer</h1>
+    <div class="spacer"></div>
+    <button class="btn primary" id="authBtn" onclick="handleAuthClick()">Connect Gmail</button>
+    <button class="btn" id="signoutBtn" onclick="handleSignoutClick()" style="display:none;">Disconnect</button>
+  </header>
+  <div id="status"></div>
 
-  <button id="authBtn" onclick="handleAuthClick()">Connect Gmail</button>
-  <button id="signoutBtn" onclick="handleSignoutClick()" style="display:none;">Disconnect</button>
-
-  <p id="status"></p>
-
-  <hr>
-
-  <h2>Inbox</h2>
-  <div id="emailList"></div>
+  <main>
+    <div id="emailList"></div>
+    <div id="detailPanel">
+      <div id="detailEmpty">Select an email to view it here.</div>
+      <div class="detail-card" id="detailCard" style="display:none;">
+        <p class="detail-subject" id="detailSubject"></p>
+        <div class="detail-meta">
+          <div class="meta-row"><span class="meta-label">From</span><span id="detailFrom"></span></div>
+          <div class="meta-row"><span class="meta-label">To</span><span id="detailTo"></span></div>
+          <div class="meta-row"><span class="meta-label">Date</span><span id="detailDate"></span></div>
+        </div>
+        <div class="detail-body" id="detailBody"></div>
+      </div>
+    </div>
+  </main>
 
   <script>
     let tokenClient;
     let accessToken = null;
     const SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
     const CLIENT_ID = "150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com";
+
+    function setStatus(text) {
+      document.getElementById('status').innerText = text;
+    }
 
     function initTokenClient() {
       tokenClient = google.accounts.oauth2.initTokenClient({
@@ -33,16 +278,14 @@
           accessToken = tokenResponse.access_token;
           document.getElementById('authBtn').style.display = 'none';
           document.getElementById('signoutBtn').style.display = 'inline-block';
-          document.getElementById('status').innerText = "Connected. Loading emails...";
+          setStatus("Connected. Loading emails...");
           listMessages();
         },
       });
     }
 
     function handleAuthClick() {
-      if (!tokenClient) {
-        initTokenClient();
-      }
+      if (!tokenClient) initTokenClient();
       tokenClient.requestAccessToken();
     }
 
@@ -53,62 +296,185 @@
           document.getElementById('authBtn').style.display = 'inline-block';
           document.getElementById('signoutBtn').style.display = 'none';
           document.getElementById('emailList').innerHTML = '';
-          document.getElementById('status').innerText = "Disconnected.";
+          resetDetailPanel();
+          setStatus("Disconnected.");
         });
       }
+    }
+
+    function resetDetailPanel() {
+      document.getElementById('detailCard').style.display = 'none';
+      document.getElementById('detailEmpty').style.display = 'block';
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.innerText = str == null ? "" : str;
+      return div.innerHTML;
+    }
+
+    function getHeader(headers, name) {
+      const h = headers.find(h => h.name.toLowerCase() === name.toLowerCase());
+      return h ? h.value : "";
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr || "";
+      const now = new Date();
+      const sameDay = d.toDateString() === now.toDateString();
+      if (sameDay) {
+        return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      }
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    // Decode a Gmail API base64url-encoded body into text
+    function decodeBase64Url(data) {
+      if (!data) return "";
+      let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) base64 += '=';
+      try {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return new TextDecoder('utf-8').decode(bytes);
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function stripHtml(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      return div.textContent || div.innerText || "";
+    }
+
+    // Walk MIME parts to find the best body text (prefer text/plain, fall back to text/html)
+    function extractBody(payload) {
+      let plain = null;
+      let html = null;
+
+      function walk(part) {
+        if (!part) return;
+        if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+          plain = plain || decodeBase64Url(part.body.data);
+        } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+          html = html || decodeBase64Url(part.body.data);
+        }
+        if (part.parts) {
+          for (const p of part.parts) walk(p);
+        }
+      }
+
+      walk(payload);
+
+      if (plain) return plain;
+      if (html) return stripHtml(html);
+      if (payload.body && payload.body.data) return decodeBase64Url(payload.body.data);
+      return "(no readable content)";
     }
 
     async function listMessages() {
       try {
         const listRes = await fetch(
-          "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=15",
+          "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25",
           { headers: { Authorization: "Bearer " + accessToken } }
         );
         const listData = await listRes.json();
 
         if (!listData.messages) {
-          document.getElementById('status').innerText = "No messages found.";
+          setStatus("No messages found.");
           return;
         }
 
-        document.getElementById('status').innerText = "Loaded " + listData.messages.length + " messages.";
         const container = document.getElementById('emailList');
-        container.innerHTML = '';
+        container.innerHTML = '<div class="loading-row">Loading messages...</div>';
+
+        const items = [];
 
         for (const msg of listData.messages) {
           const detailRes = await fetch(
-            "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + msg.id + "?format=metadata&metadataHeaders=From&metadataHeaders=Subject",
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + msg.id +
+            "?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date",
             { headers: { Authorization: "Bearer " + accessToken } }
           );
           const detail = await detailRes.json();
+          const headers = (detail.payload && detail.payload.headers) || [];
+          const isUnread = (detail.labelIds || []).includes('UNREAD');
 
-          let subject = "(no subject)";
-          let from = "(unknown sender)";
-          if (detail.payload && detail.payload.headers) {
-            for (const h of detail.payload.headers) {
-              if (h.name === "Subject") subject = h.value;
-              if (h.name === "From") from = h.value;
-            }
-          }
-
-          const div = document.createElement('div');
-          div.style.borderBottom = "1px solid #ccc";
-          div.style.padding = "8px 0";
-          div.innerHTML =
-            "<strong>" + escapeHtml(subject) + "</strong><br>" +
-            "From: " + escapeHtml(from) + "<br>" +
-            "<span style='color:#666;'>" + escapeHtml(detail.snippet || "") + "</span>";
-          container.appendChild(div);
+          items.push({
+            id: msg.id,
+            from: getHeader(headers, 'From'),
+            to: getHeader(headers, 'To'),
+            subject: getHeader(headers, 'Subject') || "(no subject)",
+            date: getHeader(headers, 'Date'),
+            snippet: detail.snippet || "",
+            unread: isUnread
+          });
         }
+
+        setStatus("Loaded " + items.length + " messages.");
+        renderList(items);
       } catch (err) {
-        document.getElementById('status').innerText = "Error loading messages: " + err;
+        setStatus("Error loading messages: " + err);
       }
     }
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.innerText = str;
-      return div.innerHTML;
+    function renderList(items) {
+      const container = document.getElementById('emailList');
+      container.innerHTML = '';
+
+      for (const item of items) {
+        const el = document.createElement('div');
+        el.className = 'email-item' + (item.unread ? ' unread' : '');
+        el.dataset.id = item.id;
+        el.innerHTML =
+          '<div class="dot"></div>' +
+          '<div class="content">' +
+            '<div class="row-top">' +
+              '<span class="from">' + escapeHtml(item.from) + '</span>' +
+              '<span class="date">' + escapeHtml(formatDate(item.date)) + '</span>' +
+            '</div>' +
+            '<div class="subject">' + escapeHtml(item.subject) + '</div>' +
+            '<div class="snippet">' + escapeHtml(item.snippet) + '</div>' +
+          '</div>';
+        el.addEventListener('click', () => openEmail(item.id, el));
+        container.appendChild(el);
+      }
+    }
+
+    async function openEmail(id, el) {
+      document.querySelectorAll('.email-item').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      el.classList.remove('unread');
+
+      document.getElementById('detailEmpty').style.display = 'none';
+      const card = document.getElementById('detailCard');
+      card.style.display = 'block';
+      document.getElementById('detailSubject').innerText = "Loading...";
+      document.getElementById('detailFrom').innerText = "";
+      document.getElementById('detailTo').innerText = "";
+      document.getElementById('detailDate').innerText = "";
+      document.getElementById('detailBody').innerText = "";
+
+      try {
+        const res = await fetch(
+          "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full",
+          { headers: { Authorization: "Bearer " + accessToken } }
+        );
+        const detail = await res.json();
+        const headers = (detail.payload && detail.payload.headers) || [];
+
+        document.getElementById('detailSubject').innerText = getHeader(headers, 'Subject') || "(no subject)";
+        document.getElementById('detailFrom').innerText = getHeader(headers, 'From');
+        document.getElementById('detailTo').innerText = getHeader(headers, 'To');
+        document.getElementById('detailDate').innerText = getHeader(headers, 'Date');
+        document.getElementById('detailBody').innerText = extractBody(detail.payload);
+      } catch (err) {
+        document.getElementById('detailSubject').innerText = "Error loading message";
+        document.getElementById('detailBody').innerText = String(err);
+      }
     }
   </script>
 
