@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gmail Viewer</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ffffff'/%3E%3Crect x='3' y='7' width='26' height='18' fill='none' stroke='%237a2020' stroke-width='2'/%3E%3Cpath d='M4 8l12 10 12-10' fill='none' stroke='%237a2020' stroke-width='2'/%3E%3C/svg%3E">
+<title>Mail</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
@@ -15,9 +14,9 @@
     --line-soft: #ececec;
     --bg: #fafafa;
     --panel: #ffffff;
-    --accent: #7a2020;
+    --accent: #454545;
+    --accent-hover: #2d2d2d;
     --hover: #f4f4f4;
-    --selected: #f0e9e9;
   }
 
   * { box-sizing: border-box; border-radius: 0 !important; }
@@ -32,33 +31,29 @@
   header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 0 24px;
-    height: 56px;
+    gap: 10px;
+    padding: 0 20px;
+    height: 40px;
     background: var(--panel);
     border-bottom: 1px solid var(--line);
-  }
-
-  header img.logo {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
+    position: relative;
   }
 
   header h1 {
-    font-size: 15px;
+    font-size: 13.5px;
     font-weight: 600;
     margin: 0;
     letter-spacing: 0.2px;
+    color: var(--ink);
   }
 
   header .spacer { flex: 1; }
 
   .btn {
     font-family: inherit;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
-    padding: 7px 16px;
+    padding: 5px 13px;
     border: 1px solid var(--line);
     background: var(--panel);
     color: var(--ink);
@@ -73,28 +68,111 @@
     color: #fff;
   }
 
-  .btn.primary:hover { background: #5f1919; }
+  .btn.primary:hover { background: var(--accent-hover); }
 
   #status {
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--ink-faint);
     text-align: center;
-    padding: 6px 0 0 0;
+    padding: 5px 0 0 0;
   }
 
   .page {
     max-width: 760px;
     margin: 0 auto;
-    padding: 24px 20px 60px 20px;
+    padding: 22px 20px 60px 20px;
   }
 
+  /* Accounts menu */
+  #accountsWrap { position: relative; }
+
+  #accountsMenu {
+    display: none;
+    position: absolute;
+    top: 32px;
+    right: 0;
+    min-width: 220px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    z-index: 20;
+  }
+
+  #accountsMenu.open { display: block; }
+
+  .account-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .account-row:hover { background: var(--hover); }
+
+  .account-row.active { font-weight: 700; }
+
+  .account-row .email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .account-row .tag {
+    font-size: 10px;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
+  .menu-action {
+    padding: 9px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--accent);
+  }
+
+  .menu-action:hover { background: var(--hover); }
+
+  /* Sign-in modal */
+  #signinOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  #signinOverlay.open { display: flex; }
+
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    width: 320px;
+    padding: 28px 26px;
+    text-align: center;
+  }
+
+  .modal-box h2 {
+    font-size: 15.5px;
+    margin: 0 0 8px 0;
+  }
+
+  .modal-box p {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+  }
+
+  /* Inbox list */
   .list-header {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 8px;
-    margin-bottom: 4px;
+    align-items: center;
+    padding: 9px 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-bottom: none;
   }
 
   .list-header .eyebrow {
@@ -107,7 +185,6 @@
   #emailList {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-top: none;
   }
 
   .email-item {
@@ -118,6 +195,8 @@
     border-bottom: 1px solid var(--line-soft);
     cursor: pointer;
   }
+
+  .email-item:last-child { border-bottom: none; }
 
   .email-item:hover { background: var(--hover); }
 
@@ -154,9 +233,7 @@
     color: var(--ink-soft);
   }
 
-  .email-item .subject-wrap .subject {
-    color: var(--ink);
-  }
+  .email-item .subject-wrap .subject { color: var(--ink); }
 
   .email-item.unread .subject-wrap .subject { font-weight: 700; }
 
@@ -250,11 +327,13 @@
 <body>
 
   <header>
-    <img class="logo" src="Logo.png" alt="Logo">
-    <h1>Gmail Viewer</h1>
+    <h1>Mail</h1>
     <div class="spacer"></div>
-    <button class="btn primary" id="authBtn" onclick="handleAuthClick()">Connect Gmail</button>
-    <button class="btn" id="signoutBtn" onclick="handleSignoutClick()" style="display:none;">Disconnect</button>
+    <div id="accountsWrap">
+      <button class="btn" id="accountsBtn" onclick="toggleAccountsMenu()" style="display:none;">Accounts ▾</button>
+      <div id="accountsMenu"></div>
+    </div>
+    <button class="btn primary" id="authBtn" onclick="openSigninModal()">Sign in</button>
   </header>
   <div id="status"></div>
 
@@ -266,7 +345,7 @@
         <span class="eyebrow" id="countLabel"></span>
       </div>
       <div id="emailList">
-        <div class="empty-row">Connect your Gmail account to see messages here.</div>
+        <div class="empty-row">Sign in to see your messages here.</div>
       </div>
       <div id="loadMoreWrap">
         <button class="btn" id="loadMoreBtn" onclick="loadMore()">Load more mail</button>
@@ -288,56 +367,215 @@
 
   </div>
 
+  <div id="signinOverlay">
+    <div class="modal-box">
+      <h2>Sign in to Mail</h2>
+      <p>Connect your Gmail account to view your inbox. You can add more than one account later.</p>
+      <button class="btn primary" style="width:100%;" onclick="requestNewAccount()">Continue with Google</button>
+    </div>
+  </div>
+
   <script>
+    const SCOPES = "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email";
+    const CLIENT_ID = "150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com";
+    const STORAGE_KEY = "mailviewer_accounts";
+    const ACTIVE_KEY = "mailviewer_active_email";
+
     let tokenClient;
-    let accessToken = null;
+    let accounts = {};      // email -> { accessToken, expiresAt }
+    let activeEmail = null;
     let nextPageToken = null;
     let allItems = [];
-    const SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
-    const CLIENT_ID = "150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com";
+
+    function loadAccountsFromStorage() {
+      try {
+        accounts = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch (e) {
+        accounts = {};
+      }
+      activeEmail = localStorage.getItem(ACTIVE_KEY) || null;
+    }
+
+    function persistAccounts() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+      if (activeEmail) localStorage.setItem(ACTIVE_KEY, activeEmail);
+    }
 
     function setStatus(text) {
       document.getElementById('status').innerText = text;
     }
 
-    function initTokenClient() {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPE,
-        callback: (tokenResponse) => {
-          accessToken = tokenResponse.access_token;
-          document.getElementById('authBtn').style.display = 'none';
-          document.getElementById('signoutBtn').style.display = 'inline-block';
-          setStatus("Connected. Loading emails...");
-          allItems = [];
-          nextPageToken = null;
-          document.getElementById('emailList').innerHTML = '<div class="loading-row">Loading messages...</div>';
-          fetchPage();
-        },
+    function getTokenClient() {
+      if (!tokenClient) {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: () => {}, // overridden per-call below
+        });
+      }
+      return tokenClient;
+    }
+
+    // Request a brand-new account (shows Google's account chooser / consent once)
+    function requestNewAccount() {
+      const client = getTokenClient();
+      client.callback = async (tokenResponse) => {
+        if (tokenResponse.error) {
+          setStatus("Sign-in was cancelled or failed.");
+          return;
+        }
+        const email = await fetchEmailForToken(tokenResponse.access_token);
+        if (!email) {
+          setStatus("Could not read account email.");
+          return;
+        }
+        accounts[email] = {
+          accessToken: tokenResponse.access_token,
+          expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
+        };
+        activeEmail = email;
+        persistAccounts();
+        closeSigninModal();
+        refreshUiForSignedIn();
+      };
+      client.requestAccessToken({ prompt: "consent select_account" });
+    }
+
+    // Silently try to refresh a token for an already-known account, without
+    // showing the full consent screen again (falls back to a quick popup
+    // only if Google requires it, e.g. if the grant expired or was revoked).
+    function silentRefresh(email) {
+      return new Promise((resolve) => {
+        const client = getTokenClient();
+        client.callback = (tokenResponse) => {
+          if (tokenResponse.error) {
+            resolve(false);
+            return;
+          }
+          accounts[email] = {
+            accessToken: tokenResponse.access_token,
+            expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
+          };
+          persistAccounts();
+          resolve(true);
+        };
+        client.requestAccessToken({ prompt: "", hint: email });
       });
     }
 
-    function handleAuthClick() {
-      if (!tokenClient) initTokenClient();
-      tokenClient.requestAccessToken();
-    }
-
-    function handleSignoutClick() {
-      if (accessToken) {
-        google.accounts.oauth2.revoke(accessToken, () => {
-          accessToken = null;
-          allItems = [];
-          nextPageToken = null;
-          document.getElementById('authBtn').style.display = 'inline-block';
-          document.getElementById('signoutBtn').style.display = 'none';
-          document.getElementById('emailList').innerHTML = '<div class="empty-row">Connect your Gmail account to see messages here.</div>';
-          document.getElementById('loadMoreBtn').style.display = 'none';
-          document.getElementById('countLabel').innerText = '';
-          showList();
-          setStatus("Disconnected.");
+    async function fetchEmailForToken(token) {
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: "Bearer " + token }
         });
+        const data = await res.json();
+        return data.email || null;
+      } catch (e) {
+        return null;
       }
     }
+
+    async function ensureValidToken(email) {
+      const acc = accounts[email];
+      if (acc && acc.expiresAt - Date.now() > 60000) {
+        return acc.accessToken;
+      }
+      const ok = await silentRefresh(email);
+      return ok ? accounts[email].accessToken : null;
+    }
+
+    function openSigninModal() {
+      document.getElementById('signinOverlay').classList.add('open');
+    }
+
+    function closeSigninModal() {
+      document.getElementById('signinOverlay').classList.remove('open');
+    }
+
+    function toggleAccountsMenu() {
+      const menu = document.getElementById('accountsMenu');
+      menu.classList.toggle('open');
+      if (menu.classList.contains('open')) renderAccountsMenu();
+    }
+
+    function renderAccountsMenu() {
+      const menu = document.getElementById('accountsMenu');
+      menu.innerHTML = '';
+      Object.keys(accounts).forEach((email) => {
+        const row = document.createElement('div');
+        row.className = 'account-row' + (email === activeEmail ? ' active' : '');
+        row.innerHTML = '<span class="email">' + escapeHtml(email) + '</span>' +
+          (email === activeEmail ? '<span class="tag">active</span>' : '');
+        row.onclick = () => switchAccount(email);
+        menu.appendChild(row);
+      });
+      const addRow = document.createElement('div');
+      addRow.className = 'menu-action';
+      addRow.innerText = '+ Add account';
+      addRow.onclick = () => { toggleAccountsMenu(); requestNewAccount(); };
+      menu.appendChild(addRow);
+
+      const signOutRow = document.createElement('div');
+      signOutRow.className = 'menu-action';
+      signOutRow.innerText = 'Remove ' + activeEmail;
+      signOutRow.onclick = () => removeActiveAccount();
+      menu.appendChild(signOutRow);
+    }
+
+    async function switchAccount(email) {
+      toggleAccountsMenu();
+      activeEmail = email;
+      persistAccounts();
+      setStatus("Switching to " + email + "...");
+      allItems = [];
+      nextPageToken = null;
+      showList();
+      document.getElementById('emailList').innerHTML = '<div class="loading-row">Loading messages...</div>';
+      const token = await ensureValidToken(email);
+      if (!token) {
+        setStatus("Could not sign back into " + email + ". Try adding it again.");
+        return;
+      }
+      setStatus("Connected as " + email + ".");
+      fetchPage();
+    }
+
+    function removeActiveAccount() {
+      delete accounts[activeEmail];
+      const remaining = Object.keys(accounts);
+      activeEmail = remaining.length ? remaining[0] : null;
+      persistAccounts();
+      toggleAccountsMenu();
+      if (activeEmail) {
+        switchAccount(activeEmail);
+      } else {
+        localStorage.removeItem(ACTIVE_KEY);
+        refreshUiForSignedOut();
+      }
+    }
+
+    function refreshUiForSignedIn() {
+      document.getElementById('authBtn').style.display = 'none';
+      document.getElementById('accountsBtn').style.display = 'inline-block';
+      document.getElementById('accountsBtn').innerText = activeEmail + ' ▾';
+      setStatus("Connected as " + activeEmail + ".");
+      allItems = [];
+      nextPageToken = null;
+      document.getElementById('emailList').innerHTML = '<div class="loading-row">Loading messages...</div>';
+      fetchPage();
+    }
+
+    function refreshUiForSignedOut() {
+      document.getElementById('authBtn').style.display = 'inline-block';
+      document.getElementById('accountsBtn').style.display = 'none';
+      document.getElementById('emailList').innerHTML = '<div class="empty-row">Sign in to see your messages here.</div>';
+      document.getElementById('loadMoreBtn').style.display = 'none';
+      document.getElementById('countLabel').innerText = '';
+      showList();
+      setStatus("Signed out.");
+    }
+
+    // ---- Gmail data ----
 
     function escapeHtml(str) {
       const div = document.createElement('div');
@@ -355,9 +593,7 @@
       if (isNaN(d)) return dateStr || "";
       const now = new Date();
       const sameDay = d.toDateString() === now.toDateString();
-      if (sameDay) {
-        return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-      }
+      if (sameDay) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
       return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
@@ -384,7 +620,6 @@
     function extractBody(payload) {
       let plain = null;
       let html = null;
-
       function walk(part) {
         if (!part) return;
         if (part.mimeType === 'text/plain' && part.body && part.body.data) {
@@ -392,17 +627,25 @@
         } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
           html = html || decodeBase64Url(part.body.data);
         }
-        if (part.parts) {
-          for (const p of part.parts) walk(p);
-        }
+        if (part.parts) for (const p of part.parts) walk(p);
       }
-
       walk(payload);
-
       if (plain) return plain;
       if (html) return stripHtml(html);
       if (payload.body && payload.body.data) return decodeBase64Url(payload.body.data);
       return "(no readable content)";
+    }
+
+    function cleanSender(from) {
+      const match = from.match(/^"?([^"<]*)"?\s*<.*>$/);
+      if (match && match[1].trim()) return match[1].trim();
+      return from;
+    }
+
+    async function authHeader() {
+      const token = await ensureValidToken(activeEmail);
+      if (!token) throw new Error("not signed in");
+      return { Authorization: "Bearer " + token };
     }
 
     async function fetchPage() {
@@ -410,9 +653,9 @@
         let url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20";
         if (nextPageToken) url += "&pageToken=" + nextPageToken;
 
-        const listRes = await fetch(url, { headers: { Authorization: "Bearer " + accessToken } });
+        const headers = await authHeader();
+        const listRes = await fetch(url, { headers });
         const listData = await listRes.json();
-
         nextPageToken = listData.nextPageToken || null;
 
         if (!listData.messages) {
@@ -425,21 +668,21 @@
         }
 
         for (const msg of listData.messages) {
+          const dHeaders = await authHeader();
           const detailRes = await fetch(
             "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + msg.id +
             "?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date",
-            { headers: { Authorization: "Bearer " + accessToken } }
+            { headers: dHeaders }
           );
           const detail = await detailRes.json();
-          const headers = (detail.payload && detail.payload.headers) || [];
+          const hdrs = (detail.payload && detail.payload.headers) || [];
           const isUnread = (detail.labelIds || []).includes('UNREAD');
 
           allItems.push({
             id: msg.id,
-            from: getHeader(headers, 'From'),
-            to: getHeader(headers, 'To'),
-            subject: getHeader(headers, 'Subject') || "(no subject)",
-            date: getHeader(headers, 'Date'),
+            from: getHeader(hdrs, 'From'),
+            subject: getHeader(hdrs, 'Subject') || "(no subject)",
+            date: getHeader(hdrs, 'Date'),
             snippet: detail.snippet || "",
             unread: isUnread
           });
@@ -449,7 +692,7 @@
         renderList();
         document.getElementById('loadMoreBtn').style.display = nextPageToken ? 'inline-block' : 'none';
       } catch (err) {
-        setStatus("Error loading messages: " + err);
+        setStatus("Error loading messages: " + err.message);
       }
     }
 
@@ -478,13 +721,6 @@
       }
     }
 
-    function cleanSender(from) {
-      // Strip the email address part if a display name is present: "Name <email>" -> "Name"
-      const match = from.match(/^"?([^"<]*)"?\s*<.*>$/);
-      if (match && match[1].trim()) return match[1].trim();
-      return from;
-    }
-
     function showList() {
       document.getElementById('detailView').style.display = 'none';
       document.getElementById('listView').style.display = 'block';
@@ -506,23 +742,44 @@
       document.getElementById('detailBody').innerText = "";
 
       try {
+        const headers = await authHeader();
         const res = await fetch(
           "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full",
-          { headers: { Authorization: "Bearer " + accessToken } }
+          { headers }
         );
         const detail = await res.json();
-        const headers = (detail.payload && detail.payload.headers) || [];
+        const hdrs = (detail.payload && detail.payload.headers) || [];
 
-        document.getElementById('detailSubject').innerText = getHeader(headers, 'Subject') || "(no subject)";
-        document.getElementById('detailFrom').innerText = getHeader(headers, 'From');
-        document.getElementById('detailTo').innerText = getHeader(headers, 'To');
-        document.getElementById('detailDate').innerText = getHeader(headers, 'Date');
+        document.getElementById('detailSubject').innerText = getHeader(hdrs, 'Subject') || "(no subject)";
+        document.getElementById('detailFrom').innerText = getHeader(hdrs, 'From');
+        document.getElementById('detailTo').innerText = getHeader(hdrs, 'To');
+        document.getElementById('detailDate').innerText = getHeader(hdrs, 'Date');
         document.getElementById('detailBody').innerText = extractBody(detail.payload);
       } catch (err) {
         document.getElementById('detailSubject').innerText = "Error loading message";
-        document.getElementById('detailBody').innerText = String(err);
+        document.getElementById('detailBody').innerText = String(err.message || err);
       }
     }
+
+    // Close accounts menu when clicking outside it
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('accountsWrap');
+      if (!wrap.contains(e.target)) {
+        document.getElementById('accountsMenu').classList.remove('open');
+      }
+    });
+
+    // ---- Boot ----
+    window.addEventListener('load', () => {
+      loadAccountsFromStorage();
+      const emails = Object.keys(accounts);
+      if (emails.length === 0) {
+        openSigninModal();
+        return;
+      }
+      if (!activeEmail || !accounts[activeEmail]) activeEmail = emails[0];
+      refreshUiForSignedIn();
+    });
   </script>
 
 </body>
