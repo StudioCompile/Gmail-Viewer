@@ -4,24 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gmail Viewer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ffffff'/%3E%3Crect x='3' y='7' width='26' height='18' fill='none' stroke='%237a2020' stroke-width='2'/%3E%3Cpath d='M4 8l12 10 12-10' fill='none' stroke='%237a2020' stroke-width='2'/%3E%3C/svg%3E">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
-    --blue: #0a66c2;
-    --blue-dark: #08498f;
-    --ink: #1b1b1b;
-    --ink-soft: #55585c;
-    --line: #d9dce0;
-    --line-soft: #eceef1;
+    --ink: #1a1a1a;
+    --ink-soft: #6b6b6b;
+    --ink-faint: #9a9a9a;
+    --line: #dcdcdc;
+    --line-soft: #ececec;
+    --bg: #fafafa;
     --panel: #ffffff;
-    --bg: #f3f4f6;
-    --unread-dot: #0a66c2;
+    --accent: #7a2020;
+    --hover: #f4f4f4;
+    --selected: #f0e9e9;
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; border-radius: 0 !important; }
 
   html, body {
-    height: 100%;
     margin: 0;
     background: var(--bg);
     color: var(--ink);
@@ -32,108 +33,110 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 20px;
+    padding: 0 24px;
+    height: 56px;
     background: var(--panel);
     border-bottom: 1px solid var(--line);
   }
 
   header img.logo {
-    width: 30px;
-    height: 30px;
+    width: 22px;
+    height: 22px;
     object-fit: contain;
-    border-radius: 6px;
   }
 
   header h1 {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 600;
     margin: 0;
-    letter-spacing: 0.1px;
+    letter-spacing: 0.2px;
   }
 
   header .spacer { flex: 1; }
 
   .btn {
     font-family: inherit;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
-    padding: 7px 14px;
-    border-radius: 6px;
+    padding: 7px 16px;
     border: 1px solid var(--line);
     background: var(--panel);
     color: var(--ink);
     cursor: pointer;
   }
 
-  .btn:hover { background: var(--line-soft); }
+  .btn:hover { background: var(--hover); }
 
   .btn.primary {
-    background: var(--blue);
-    border-color: var(--blue);
+    background: var(--accent);
+    border-color: var(--accent);
     color: #fff;
   }
 
-  .btn.primary:hover { background: var(--blue-dark); }
+  .btn.primary:hover { background: #5f1919; }
 
   #status {
-    font-size: 12px;
-    color: var(--ink-soft);
-    padding: 4px 20px 0 20px;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    text-align: center;
+    padding: 6px 0 0 0;
   }
 
-  main {
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 20px 60px 20px;
+  }
+
+  .list-header {
     display: flex;
-    height: calc(100vh - 54px);
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+
+  .list-header .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
   }
 
   #emailList {
-    width: 380px;
-    min-width: 280px;
-    border-right: 1px solid var(--line);
     background: var(--panel);
-    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-top: none;
   }
 
   .email-item {
     display: flex;
-    gap: 10px;
+    align-items: baseline;
+    gap: 14px;
     padding: 12px 16px;
     border-bottom: 1px solid var(--line-soft);
     cursor: pointer;
   }
 
-  .email-item:hover { background: var(--line-soft); }
-
-  .email-item.selected {
-    background: #eaf2fb;
-    border-left: 3px solid var(--blue);
-    padding-left: 13px;
-  }
+  .email-item:hover { background: var(--hover); }
 
   .email-item .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--unread-dot);
-    margin-top: 6px;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
     flex-shrink: 0;
     visibility: hidden;
+    align-self: center;
   }
 
   .email-item.unread .dot { visibility: visible; }
 
-  .email-item .content { flex: 1; min-width: 0; }
-
-  .email-item .row-top {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
   .email-item .from {
-    font-size: 13.5px;
-    font-weight: 600;
+    font-size: 13px;
     color: var(--ink);
+    width: 170px;
+    flex-shrink: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -141,95 +144,106 @@
 
   .email-item.unread .from { font-weight: 700; }
 
+  .email-item .subject-wrap {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink-soft);
+  }
+
+  .email-item .subject-wrap .subject {
+    color: var(--ink);
+  }
+
+  .email-item.unread .subject-wrap .subject { font-weight: 700; }
+
+  .email-item .subject-wrap .dash { color: var(--ink-faint); margin: 0 4px; }
+
   .email-item .date {
     font-size: 11.5px;
-    color: var(--ink-soft);
-    white-space: nowrap;
+    color: var(--ink-faint);
     flex-shrink: 0;
+    width: 60px;
+    text-align: right;
   }
 
-  .email-item .subject {
+  .loading-row, .empty-row {
+    padding: 20px 16px;
     font-size: 13px;
-    color: var(--ink);
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .email-item.unread .subject { font-weight: 600; }
-
-  .email-item .snippet {
-    font-size: 12.5px;
-    color: var(--ink-soft);
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  #detailPanel {
-    flex: 1;
-    overflow-y: auto;
-    background: var(--bg);
-    padding: 28px 36px;
-  }
-
-  #detailEmpty {
-    color: var(--ink-soft);
-    font-size: 14px;
-    margin-top: 60px;
+    color: var(--ink-faint);
     text-align: center;
   }
+
+  #loadMoreWrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  #loadMoreBtn { display: none; }
+
+  /* Detail view */
+  #detailView { display: none; }
+
+  .back-link {
+    display: inline-block;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    margin-bottom: 16px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--ink-faint);
+  }
+
+  .back-link:hover { color: var(--ink); border-color: var(--ink); }
 
   .detail-card {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 24px 28px;
-    max-width: 760px;
+    padding: 28px 30px;
   }
 
   .detail-subject {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0 0 14px 0;
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 16px 0;
   }
 
   .detail-meta {
     border-top: 1px solid var(--line-soft);
     border-bottom: 1px solid var(--line-soft);
     padding: 12px 0;
-    margin-bottom: 18px;
-    font-size: 13px;
+    margin-bottom: 20px;
+    font-size: 12.5px;
     color: var(--ink-soft);
   }
 
   .detail-meta .meta-row {
     display: flex;
-    gap: 8px;
-    margin: 2px 0;
+    gap: 10px;
+    margin: 3px 0;
   }
 
   .detail-meta .meta-label {
-    width: 46px;
+    width: 44px;
     flex-shrink: 0;
-    font-weight: 600;
-    color: var(--ink);
+    font-weight: 700;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.4px;
+    padding-top: 1px;
   }
 
   .detail-body {
-    font-size: 14px;
-    line-height: 1.55;
+    font-size: 13.5px;
+    line-height: 1.6;
     color: var(--ink);
     white-space: pre-wrap;
     word-wrap: break-word;
-  }
-
-  .loading-row {
-    padding: 16px;
-    font-size: 13px;
-    color: var(--ink-soft);
   }
 </style>
 </head>
@@ -244,11 +258,24 @@
   </header>
   <div id="status"></div>
 
-  <main>
-    <div id="emailList"></div>
-    <div id="detailPanel">
-      <div id="detailEmpty">Select an email to view it here.</div>
-      <div class="detail-card" id="detailCard" style="display:none;">
+  <div class="page">
+
+    <div id="listView">
+      <div class="list-header">
+        <span class="eyebrow">Inbox</span>
+        <span class="eyebrow" id="countLabel"></span>
+      </div>
+      <div id="emailList">
+        <div class="empty-row">Connect your Gmail account to see messages here.</div>
+      </div>
+      <div id="loadMoreWrap">
+        <button class="btn" id="loadMoreBtn" onclick="loadMore()">Load more mail</button>
+      </div>
+    </div>
+
+    <div id="detailView">
+      <span class="back-link" onclick="showList()">← Back to inbox</span>
+      <div class="detail-card">
         <p class="detail-subject" id="detailSubject"></p>
         <div class="detail-meta">
           <div class="meta-row"><span class="meta-label">From</span><span id="detailFrom"></span></div>
@@ -258,11 +285,14 @@
         <div class="detail-body" id="detailBody"></div>
       </div>
     </div>
-  </main>
+
+  </div>
 
   <script>
     let tokenClient;
     let accessToken = null;
+    let nextPageToken = null;
+    let allItems = [];
     const SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
     const CLIENT_ID = "150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com";
 
@@ -279,7 +309,10 @@
           document.getElementById('authBtn').style.display = 'none';
           document.getElementById('signoutBtn').style.display = 'inline-block';
           setStatus("Connected. Loading emails...");
-          listMessages();
+          allItems = [];
+          nextPageToken = null;
+          document.getElementById('emailList').innerHTML = '<div class="loading-row">Loading messages...</div>';
+          fetchPage();
         },
       });
     }
@@ -293,18 +326,17 @@
       if (accessToken) {
         google.accounts.oauth2.revoke(accessToken, () => {
           accessToken = null;
+          allItems = [];
+          nextPageToken = null;
           document.getElementById('authBtn').style.display = 'inline-block';
           document.getElementById('signoutBtn').style.display = 'none';
-          document.getElementById('emailList').innerHTML = '';
-          resetDetailPanel();
+          document.getElementById('emailList').innerHTML = '<div class="empty-row">Connect your Gmail account to see messages here.</div>';
+          document.getElementById('loadMoreBtn').style.display = 'none';
+          document.getElementById('countLabel').innerText = '';
+          showList();
           setStatus("Disconnected.");
         });
       }
-    }
-
-    function resetDetailPanel() {
-      document.getElementById('detailCard').style.display = 'none';
-      document.getElementById('detailEmpty').style.display = 'block';
     }
 
     function escapeHtml(str) {
@@ -329,7 +361,6 @@
       return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
-    // Decode a Gmail API base64url-encoded body into text
     function decodeBase64Url(data) {
       if (!data) return "";
       let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
@@ -350,7 +381,6 @@
       return div.textContent || div.innerText || "";
     }
 
-    // Walk MIME parts to find the best body text (prefer text/plain, fall back to text/html)
     function extractBody(payload) {
       let plain = null;
       let html = null;
@@ -375,23 +405,24 @@
       return "(no readable content)";
     }
 
-    async function listMessages() {
+    async function fetchPage() {
       try {
-        const listRes = await fetch(
-          "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25",
-          { headers: { Authorization: "Bearer " + accessToken } }
-        );
+        let url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20";
+        if (nextPageToken) url += "&pageToken=" + nextPageToken;
+
+        const listRes = await fetch(url, { headers: { Authorization: "Bearer " + accessToken } });
         const listData = await listRes.json();
 
+        nextPageToken = listData.nextPageToken || null;
+
         if (!listData.messages) {
-          setStatus("No messages found.");
+          if (allItems.length === 0) {
+            document.getElementById('emailList').innerHTML = '<div class="empty-row">No messages found.</div>';
+          }
+          setStatus("No more messages.");
+          document.getElementById('loadMoreBtn').style.display = 'none';
           return;
         }
-
-        const container = document.getElementById('emailList');
-        container.innerHTML = '<div class="loading-row">Loading messages...</div>';
-
-        const items = [];
 
         for (const msg of listData.messages) {
           const detailRes = await fetch(
@@ -403,7 +434,7 @@
           const headers = (detail.payload && detail.payload.headers) || [];
           const isUnread = (detail.labelIds || []).includes('UNREAD');
 
-          items.push({
+          allItems.push({
             id: msg.id,
             from: getHeader(headers, 'From'),
             to: getHeader(headers, 'To'),
@@ -414,44 +445,60 @@
           });
         }
 
-        setStatus("Loaded " + items.length + " messages.");
-        renderList(items);
+        setStatus("Loaded " + allItems.length + " messages.");
+        renderList();
+        document.getElementById('loadMoreBtn').style.display = nextPageToken ? 'inline-block' : 'none';
       } catch (err) {
         setStatus("Error loading messages: " + err);
       }
     }
 
-    function renderList(items) {
+    function loadMore() {
+      document.getElementById('loadMoreBtn').style.display = 'none';
+      setStatus("Loading more messages...");
+      fetchPage();
+    }
+
+    function renderList() {
       const container = document.getElementById('emailList');
       container.innerHTML = '';
+      document.getElementById('countLabel').innerText = allItems.length + (allItems.length === 1 ? ' message' : ' messages');
 
-      for (const item of items) {
+      for (const item of allItems) {
         const el = document.createElement('div');
         el.className = 'email-item' + (item.unread ? ' unread' : '');
         el.dataset.id = item.id;
         el.innerHTML =
           '<div class="dot"></div>' +
-          '<div class="content">' +
-            '<div class="row-top">' +
-              '<span class="from">' + escapeHtml(item.from) + '</span>' +
-              '<span class="date">' + escapeHtml(formatDate(item.date)) + '</span>' +
-            '</div>' +
-            '<div class="subject">' + escapeHtml(item.subject) + '</div>' +
-            '<div class="snippet">' + escapeHtml(item.snippet) + '</div>' +
-          '</div>';
+          '<span class="from">' + escapeHtml(cleanSender(item.from)) + '</span>' +
+          '<span class="subject-wrap"><span class="subject">' + escapeHtml(item.subject) + '</span><span class="dash">—</span>' + escapeHtml(item.snippet) + '</span>' +
+          '<span class="date">' + escapeHtml(formatDate(item.date)) + '</span>';
         el.addEventListener('click', () => openEmail(item.id, el));
         container.appendChild(el);
       }
     }
 
-    async function openEmail(id, el) {
-      document.querySelectorAll('.email-item').forEach(e => e.classList.remove('selected'));
-      el.classList.add('selected');
-      el.classList.remove('unread');
+    function cleanSender(from) {
+      // Strip the email address part if a display name is present: "Name <email>" -> "Name"
+      const match = from.match(/^"?([^"<]*)"?\s*<.*>$/);
+      if (match && match[1].trim()) return match[1].trim();
+      return from;
+    }
 
-      document.getElementById('detailEmpty').style.display = 'none';
-      const card = document.getElementById('detailCard');
-      card.style.display = 'block';
+    function showList() {
+      document.getElementById('detailView').style.display = 'none';
+      document.getElementById('listView').style.display = 'block';
+    }
+
+    function showDetail() {
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'block';
+    }
+
+    async function openEmail(id, el) {
+      el.classList.remove('unread');
+      showDetail();
+
       document.getElementById('detailSubject').innerText = "Loading...";
       document.getElementById('detailFrom').innerText = "";
       document.getElementById('detailTo').innerText = "";
