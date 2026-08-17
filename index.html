@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mail</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<meta name="google-signin-client_id" content="150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com">
+<script src="https://apis.google.com/js/platform.js" async defer></script>
 <style>
   :root {
     --ink: #1a1a1a;
@@ -413,11 +415,7 @@
       <h2>Sign in to Mail</h2>
       <p>Connect your Gmail account to view your inbox. You can add more than one account later.</p>
 
-      <div id="oneTapBlock">
-        <div id="gsiButtonSlot" class="gsi-slot"></div>
-      </div>
-
-      <div id="classicBlock" style="display:none;">
+      <div id="classicBlock">
         <button class="btn primary" style="width:100%;" onclick="requestNewAccount()">Continue with Google</button>
       </div>
 
@@ -425,10 +423,21 @@
 
       <div class="method-select-wrap" id="methodSelectWrap" style="display:none;">
         <select id="signinMethod" class="method-select" onchange="switchSigninMethod()">
-          <option value="onetap">Continue as (One Tap)</option>
-          <option value="classic">Sign in with Google (classic)</option>
+          <option value="">Choose a method…</option>
+          <option value="onetap">Continue as (top-right prompt)</option>
+          <option value="legacy">Legacy Google Sign-In</option>
           <option value="code">Use a sign-in code</option>
         </select>
+      </div>
+
+      <div id="oneTapBlock" style="display:none; margin-top:14px;">
+        <p class="code-hint" style="text-align:center;">Look for the "Continue as…" card in the top-right corner of your browser window.</p>
+        <div id="gsiButtonSlot" class="gsi-slot"></div>
+      </div>
+
+      <div id="legacyBlock" style="display:none; margin-top:14px; text-align:center;">
+        <div class="g-signin2" data-onsuccess="onLegacySignIn"></div>
+        <p class="code-hint">This is Google's old Sign-In library. Google has deprecated it, so it may fail to load in some browsers — if it doesn't work, use one of the other methods above.</p>
       </div>
 
       <div id="codeBlock" style="display:none; margin-top:14px; text-align:left;">
