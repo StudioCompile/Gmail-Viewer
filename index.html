@@ -10,13 +10,13 @@
     --ink: #1a1a1a;
     --ink-soft: #6b6b6b;
     --ink-faint: #9a9a9a;
-    --line: #dcdcdc;
-    --line-soft: #ececec;
+    --line: #b0b0b0;
+    --line-soft: #d5d5d5;
     --bg: #fafafa;
     --panel: #ffffff;
-    --accent: #454545;
-    --accent-hover: #2d2d2d;
-    --hover: #f4f4f4;
+    --accent: #1a1a1a;
+    --accent-hover: #000000;
+    --hover: #f0f0f0;
   }
 
   * { box-sizing: border-box; border-radius: 0 !important; }
@@ -28,26 +28,16 @@
     font-family: "Segoe UI", "Segoe UI Web", Tahoma, Geneva, Verdana, sans-serif;
   }
 
-  header {
+  .topbar {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 20px;
-    height: 40px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--line);
-    position: relative;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 18px 20px 0 20px;
   }
 
-  header h1 {
-    font-size: 13.5px;
-    font-weight: 600;
-    margin: 0;
-    letter-spacing: 0.2px;
-    color: var(--ink);
-  }
-
-  header .spacer { flex: 1; }
+  .topbar .spacer { flex: 1; }
 
   .btn {
     font-family: inherit;
@@ -132,7 +122,7 @@
   .menu-action:hover { background: var(--hover); }
 
   /* Sign-in modal */
-  #signinOverlay {
+  .overlay {
     display: none;
     position: fixed;
     inset: 0;
@@ -142,11 +132,11 @@
     z-index: 50;
   }
 
-  #signinOverlay.open { display: flex; }
+  .overlay.open { display: flex; }
 
   .modal-box {
     background: var(--panel);
-    border: 1px solid var(--line);
+    border: 1px solid #000000;
     width: 320px;
     padding: 28px 26px;
     text-align: center;
@@ -162,6 +152,58 @@
     color: var(--ink-soft);
     line-height: 1.5;
     margin: 0 0 20px 0;
+  }
+
+  .code-textarea {
+    width: 100%;
+    height: 70px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 11px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    resize: none;
+  }
+
+  .code-hint {
+    font-size: 11px;
+    color: var(--ink-faint);
+    line-height: 1.4;
+    margin: 8px 0 0 0;
+    text-align: left;
+  }
+
+  .method-select-wrap {
+    margin-top: 14px;
+    text-align: left;
+  }
+
+  .other-options-link {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .other-options-link:hover { color: var(--ink-soft); }
+
+  .method-select {
+    width: 100%;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 10px;
+    border: 1px solid #000000;
+    background: var(--panel);
+    color: var(--ink);
+  }
+
+  .gsi-slot {
+    display: flex;
+    justify-content: center;
+    min-height: 40px;
   }
 
   /* Inbox list */
@@ -326,15 +368,14 @@
 </head>
 <body>
 
-  <header>
-    <h1>Mail</h1>
+  <div class="topbar">
     <div class="spacer"></div>
     <div id="accountsWrap">
       <button class="btn" id="accountsBtn" onclick="toggleAccountsMenu()" style="display:none;">Accounts ▾</button>
       <div id="accountsMenu"></div>
     </div>
     <button class="btn primary" id="authBtn" onclick="openSigninModal()">Sign in</button>
-  </header>
+  </div>
   <div id="status"></div>
 
   <div class="page">
@@ -367,11 +408,44 @@
 
   </div>
 
-  <div id="signinOverlay">
+  <div id="signinOverlay" class="overlay">
     <div class="modal-box">
       <h2>Sign in to Mail</h2>
       <p>Connect your Gmail account to view your inbox. You can add more than one account later.</p>
-      <button class="btn primary" style="width:100%;" onclick="requestNewAccount()">Continue with Google</button>
+
+      <div id="oneTapBlock">
+        <div id="gsiButtonSlot" class="gsi-slot"></div>
+      </div>
+
+      <div id="classicBlock" style="display:none;">
+        <button class="btn primary" style="width:100%;" onclick="requestNewAccount()">Continue with Google</button>
+      </div>
+
+      <div class="other-options-link" id="otherOptionsLink" onclick="toggleOtherOptions()">Other sign-in options</div>
+
+      <div class="method-select-wrap" id="methodSelectWrap" style="display:none;">
+        <select id="signinMethod" class="method-select" onchange="switchSigninMethod()">
+          <option value="onetap">Continue as (One Tap)</option>
+          <option value="classic">Sign in with Google (classic)</option>
+          <option value="code">Use a sign-in code</option>
+        </select>
+      </div>
+
+      <div id="codeBlock" style="display:none; margin-top:14px; text-align:left;">
+        <textarea id="codeInput" class="code-textarea" placeholder="Paste your sign-in code here"></textarea>
+        <button class="btn primary" style="width:100%; margin-top:8px;" onclick="signInWithCode()">Use code</button>
+        <p class="code-hint">Codes come from "Get sign-in code" in the Accounts menu on a device where you're already signed in. They stop working once that Gmail session expires, usually within about an hour.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="codeExportOverlay" class="overlay">
+    <div class="modal-box">
+      <h2>Sign-in code</h2>
+      <p>Copy this and paste it into the "Use a sign-in code" option on another device. It only works while your current Gmail session stays valid, usually about an hour.</p>
+      <textarea id="codeOutput" class="code-textarea" readonly></textarea>
+      <button class="btn primary" style="width:100%; margin-top:10px;" onclick="copyExportCode()">Copy code</button>
+      <div class="other-options-link" style="margin-top:14px;" onclick="closeCodeExportModal()">Close</div>
     </div>
   </div>
 
@@ -486,10 +560,85 @@
 
     function openSigninModal() {
       document.getElementById('signinOverlay').classList.add('open');
+      initGsiButton();
     }
 
     function closeSigninModal() {
       document.getElementById('signinOverlay').classList.remove('open');
+    }
+
+    function toggleOtherOptions() {
+      const wrap = document.getElementById('methodSelectWrap');
+      const isOpen = wrap.style.display !== 'none';
+      wrap.style.display = isOpen ? 'none' : 'block';
+      document.getElementById('otherOptionsLink').innerText = isOpen ? 'Other sign-in options' : 'Hide options';
+    }
+
+    function switchSigninMethod() {
+      const method = document.getElementById('signinMethod').value;
+      document.getElementById('oneTapBlock').style.display = method === 'onetap' ? 'block' : 'none';
+      document.getElementById('classicBlock').style.display = method === 'classic' ? 'block' : 'none';
+      document.getElementById('codeBlock').style.display = method === 'code' ? 'block' : 'none';
+      if (method === 'onetap') initGsiButton();
+    }
+
+    let gsiInitialized = false;
+
+    // "Continue as ___" — Google's own Sign In With Google button/One Tap UI.
+    // This confirms identity first, then we silently request the Gmail scope.
+    function initGsiButton() {
+      if (gsiInitialized) return;
+      gsiInitialized = true;
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleOneTapCredential,
+        auto_select: false,
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('gsiButtonSlot'),
+        { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', width: 260 }
+      );
+    }
+
+    function decodeJwtEmail(credential) {
+      try {
+        const payload = credential.split('.')[1];
+        let base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
+        const json = decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(json).email || null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function handleOneTapCredential(response) {
+      const email = decodeJwtEmail(response.credential);
+      if (!email) {
+        setStatus("Could not read account from Google.");
+        return;
+      }
+      setStatus("Confirming Gmail access for " + email + "...");
+      const client = getTokenClient();
+      client.callback = (tokenResponse) => {
+        if (tokenResponse.error) {
+          setStatus("Could not get Gmail access. Try the classic sign-in option instead.");
+          return;
+        }
+        accounts[email] = {
+          accessToken: tokenResponse.access_token,
+          expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
+        };
+        activeEmail = email;
+        persistAccounts();
+        closeSigninModal();
+        refreshUiForSignedIn();
+      };
+      // Try silent first since identity is already confirmed; fall back to a
+      // one-time consent prompt if Gmail access hasn't been granted yet.
+      client.requestAccessToken({ prompt: "", hint: email });
     }
 
     function toggleAccountsMenu() {
@@ -514,6 +663,12 @@
       addRow.innerText = '+ Add account';
       addRow.onclick = () => { toggleAccountsMenu(); requestNewAccount(); };
       menu.appendChild(addRow);
+
+      const codeRow = document.createElement('div');
+      codeRow.className = 'menu-action';
+      codeRow.innerText = 'Get sign-in code';
+      codeRow.onclick = () => { toggleAccountsMenu(); openCodeExportModal(); };
+      menu.appendChild(codeRow);
 
       const signOutRow = document.createElement('div');
       signOutRow.className = 'menu-action';
@@ -552,6 +707,66 @@
         localStorage.removeItem(ACTIVE_KEY);
         refreshUiForSignedOut();
       }
+    }
+
+    // ---- Sign-in code (temporary session transfer, no server involved) ----
+
+    function openCodeExportModal() {
+      const acc = accounts[activeEmail];
+      if (!acc) return;
+      const payload = {
+        email: activeEmail,
+        accessToken: acc.accessToken,
+        expiresAt: acc.expiresAt
+      };
+      const code = btoa(JSON.stringify(payload));
+      document.getElementById('codeOutput').value = code;
+      document.getElementById('codeExportOverlay').classList.add('open');
+    }
+
+    function closeCodeExportModal() {
+      document.getElementById('codeExportOverlay').classList.remove('open');
+    }
+
+    function copyExportCode() {
+      const box = document.getElementById('codeOutput');
+      box.select();
+      navigator.clipboard.writeText(box.value).then(() => {
+        setStatus("Code copied. Paste it on the other device within about an hour.");
+      }).catch(() => {
+        setStatus("Could not copy automatically — select the text and copy manually.");
+      });
+    }
+
+    async function signInWithCode() {
+      const raw = document.getElementById('codeInput').value.trim();
+      if (!raw) {
+        setStatus("Paste a sign-in code first.");
+        return;
+      }
+      let payload;
+      try {
+        payload = JSON.parse(atob(raw));
+      } catch (e) {
+        setStatus("That code doesn't look valid.");
+        return;
+      }
+      if (!payload.email || !payload.accessToken || !payload.expiresAt) {
+        setStatus("That code doesn't look valid.");
+        return;
+      }
+      if (payload.expiresAt - Date.now() < 30000) {
+        setStatus("That code has expired. Get a fresh one from the other device, or sign in with Google directly.");
+        return;
+      }
+      accounts[payload.email] = {
+        accessToken: payload.accessToken,
+        expiresAt: payload.expiresAt
+      };
+      activeEmail = payload.email;
+      persistAccounts();
+      closeSigninModal();
+      refreshUiForSignedIn();
     }
 
     function refreshUiForSignedIn() {
