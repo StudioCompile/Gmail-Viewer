@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mail</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<meta name="google-signin-client_id" content="150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com">
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-soft: #6b6b6b;
+    --ink-faint: #9a9a9a;
+    --line: #b0b0b0;
+    --line-soft: #d5d5d5;
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --accent: #1a1a1a;
+    --accent-hover: #000000;
+    --hover: #f0f0f0;
+    --good: #1a73e8;
+    --read-bg: #f0f0f0;
+  }
+
+  html[data-theme="dark"] {
+    --ink: #eaeaea;
+    --ink-soft: #a8a8a8;
+    --ink-faint: #7a7a7a;
+    --line: #3d3d3d;
+    --line-soft: #2c2c2c;
+    --bg: #121212;
+    --panel: #1a1a1a;
+    --accent: #e8e8e8;
+    --accent-hover: #ffffff;
+    --hover: #242424;
+    --good: #4d9fff;
+    --read-bg: #202020;
+  }
+
+  html[data-theme="dark"] .btn.primary { color: #111; }
+  html[data-theme="dark"] .modal-box { border-color: var(--line); }
+
+  * { box-sizing: border-box; border-radius: 0 !important; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", "Segoe UI Web", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 18px 20px 0 20px;
+  }
+
+  .topbar .spacer { flex: 1; }
+
+  .btn {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 13px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .btn:hover { background: var(--hover); }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btn:disabled:hover { background: var(--panel); }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .btn.primary:hover { background: var(--accent-hover); }
+
+  #status {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: center;
+    padding: 5px 0 0 0;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 22px 20px 60px 20px;
+  }
+
+  /* Accounts menu */
+  #accountsWrap { position: relative; }
+
+  #accountsMenu {
+    display: none;
+    position: absolute;
+    top: 32px;
+    right: 0;
+    min-width: 220px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    z-index: 20;
+  }
+
+  #accountsMenu.open { display: block; }
+
+  .account-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .account-row:hover { background: var(--hover); }
+  .account-row.active { font-weight: 700; }
+  .account-row .email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .account-row .tag {
+    font-size: 10px;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
+  .menu-action {
+    padding: 9px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--accent);
+  }
+
+  .menu-action:hover { background: var(--hover); }
+
+  /* Sign-in modal */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  .overlay.open { display: flex; }
+
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid #000000;
+    width: 320px;
+    padding: 28px 26px;
+    text-align: center;
+  }
+
+  .modal-box h2 { font-size: 15.5px; margin: 0 0 8px 0; }
+
+  .modal-box p {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+  }
+
+  .code-textarea {
+    width: 100%;
+    height: 70px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 11px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    resize: none;
+  }
+
+  .code-hint {
+    font-size: 11px;
+    color: var(--ink-faint);
+    line-height: 1.4;
+    margin: 8px 0 0 0;
+    text-align: left;
+  }
+
+  .other-options-link {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .other-options-link:hover { color: var(--ink-soft); }
+
+  .other-options-menu {
+    margin-top: 10px;
+    border: 1px solid var(--line);
+    text-align: left;
+  }
+
+  .option-btn {
+    padding: 9px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .option-btn:last-child { border-bottom: none; }
+  .option-btn:hover { background: var(--hover); }
+
+  /* Inbox list */
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-bottom: none;
+  }
+
+  .list-header .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  #emailList {
+    background: var(--panel);
+    border: 1px solid var(--line);
+  }
+
+  .email-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    cursor: pointer;
+    background: var(--panel);
+  }
+
+  .email-item:last-child { border-bottom: none; }
+  .email-item:not(.unread) { background: var(--read-bg); }
+  .email-item:hover { background: var(--hover); }
+
+  .email-item .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    flex-shrink: 0;
+    visibility: hidden;
+  }
+
+  .email-item.unread .dot { visibility: visible; }
+
+  .email-item .from-wrap {
+    width: 170px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .email-item .from {
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .verified-badge {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--good);
+  }
+
+  .verified-wrap { display: inline-flex; align-items: center; cursor: default; }
+
+  .email-item .subject-wrap {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink-soft);
+  }
+
+  .email-item .subject-wrap .subject { color: var(--ink); }
+  .email-item .subject-wrap .dash { color: var(--ink-faint); margin: 0 4px; }
+
+  .email-item .date {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    width: 60px;
+    text-align: right;
+  }
+
+  .loading-row, .empty-row {
+    padding: 20px 16px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+
+  /* Pagination */
+  #paginationWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  #pageLabel {
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  /* Detail view */
+  #detailView { display: none; }
+
+  .back-link {
+    display: inline-block;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    margin-bottom: 16px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--ink-faint);
+  }
+
+  .back-link:hover { color: var(--ink); border-color: var(--ink); }
+
+  .detail-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 28px 30px;
+  }
+
+  .detail-subject { font-size: 19px; font-weight: 700; margin: 0 0 16px 0; }
+
+  .detail-sender-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .detail-sender-info { flex: 1; min-width: 0; }
+
+  .detail-sender-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .detail-sender-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .detail-sender-email {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  .detail-to-line {
+    font-size: 12px;
+    color: var(--ink-faint);
+    cursor: pointer;
+    margin-top: 2px;
+  }
+
+  .detail-to-line:hover { color: var(--ink-soft); }
+
+  .detail-meta-dropdown {
+    margin-top: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 12px 14px;
+    font-size: 12.5px;
+  }
+
+  .detail-meta-dropdown .meta-row {
+    display: flex;
+    gap: 10px;
+    margin: 3px 0;
+  }
+
+  .detail-meta-dropdown .meta-label {
+    width: 72px;
+    flex-shrink: 0;
+    text-align: right;
+    color: var(--ink-faint);
+    font-size: 11.5px;
+  }
+
+  .detail-meta-dropdown .meta-row span:last-child { color: var(--ink); }
+
+  .detail-body-frame { width: 100%; border: none; display: block; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="spacer"></div>
+    <button class="btn" id="themeToggleBtn" onclick="toggleTheme()">Dark mode</button>
+    <div id="accountsWrap">
+      <button class="btn" id="accountsBtn" onclick="toggleAccountsMenu()" style="display:none;">Accounts ▾</button>
+      <div id="accountsMenu"></div>
+    </div>
+    <button class="btn primary" id="authBtn" onclick="openSigninModal()">Sign in</button>
+  </div>
+  <div id="status"></div>
+
+  <div class="page">
+
+    <div id="listView">
+      <div class="list-header">
+        <span class="eyebrow">Inbox</span>
+        <span class="eyebrow" id="countLabel"></span>
+      </div>
+      <div id="emailList">
+        <div class="empty-row">Sign in to see your messages here.</div>
+      </div>
+      <div id="paginationWrap" style="display:none;">
+        <button class="btn" id="prevPageBtn" onclick="goPrevPage()">‹ Prev</button>
+        <span id="pageLabel">Page 1</span>
+        <button class="btn" id="nextPageBtn" onclick="goNextPage()">Next ›</button>
+      </div>
+    </div>
+
+    <div id="detailView">
+      <span class="back-link" onclick="showList()">← Back to inbox</span>
+      <div class="detail-card">
+        <p class="detail-subject" id="detailSubject"></p>
+
+        <div class="detail-sender-row">
+          <div class="detail-sender-info">
+            <div class="detail-sender-line">
+              <span class="detail-sender-name" id="detailSenderName"></span>
+              <span class="detail-sender-email" id="detailSenderEmail"></span>
+              <span id="detailVerifiedSlot"></span>
+            </div>
+            <div class="detail-to-line" id="detailToToggle" onclick="toggleDetailMeta()">
+              to <span id="detailToShort"></span> <span class="caret" id="detailCaret">▾</span>
+            </div>
+            <div class="detail-meta-dropdown" id="detailMetaDropdown" style="display:none;">
+              <div class="meta-row"><span class="meta-label">from</span><span id="metaFrom"></span></div>
+              <div class="meta-row" id="metaReplyToRow" style="display:none;"><span class="meta-label">reply-to</span><span id="metaReplyTo"></span></div>
+              <div class="meta-row"><span class="meta-label">to</span><span id="metaTo"></span></div>
+              <div class="meta-row"><span class="meta-label">date</span><span id="metaDate"></span></div>
+              <div class="meta-row"><span class="meta-label">subject</span><span id="metaSubject"></span></div>
+              <div class="meta-row" id="metaMailedByRow" style="display:none;"><span class="meta-label">mailed-by</span><span id="metaMailedBy"></span></div>
+              <div class="meta-row" id="metaSignedByRow" style="display:none;"><span class="meta-label">signed-by</span><span id="metaSignedBy"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <iframe id="detailBodyFrame" class="detail-body-frame" sandbox="allow-same-origin allow-popups"></iframe>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sign-in modal -->
+  <div id="signinOverlay" class="overlay">
+    <div class="modal-box">
+      <h2>Sign in to Mail</h2>
+      <p>Connect your Gmail account to view your inbox. You can add more than one account later.</p>
+
+      <button class="btn primary" style="width:100%;" onclick="requestNewAccount()">Continue with Google</button>
+
+      <div class="other-options-link" id="otherOptionsLink" onclick="toggleOtherOptions()">Other sign-in options</div>
+
+      <div class="other-options-menu" id="otherOptionsMenu" style="display:none;">
+        <div class="option-btn" onclick="requestNewAccount()">Default (Google Sign-In)</div>
+        <div class="option-btn" onclick="triggerGoogleChooser()">Continue as… (Google account chooser)</div>
+        <div class="option-btn" onclick="showLegacyBlock()">Legacy Google Sign-In</div>
+        <div class="option-btn" onclick="showCodeBlock()">Use a sign-in code</div>
+      </div>
+
+      <div id="legacyBlock" style="display:none; margin-top:14px; text-align:center;">
+        <div id="legacyButtonSlot" style="display:flex; justify-content:center;"></div>
+        <p class="code-hint" id="legacyHint" style="text-align:center;">This is Google's old Sign-In library. Google has deprecated it, so it may fail to load in some browsers.</p>
+      </div>
+
+      <div id="codeBlock" style="display:none; margin-top:14px; text-align:left;">
+        <textarea id="codeInput" class="code-textarea" placeholder="Paste your sign-in code here"></textarea>
+        <button class="btn primary" style="width:100%; margin-top:8px;" onclick="signInWithCode()">Use code</button>
+        <p class="code-hint">Codes come from "Get sign-in code" in the Accounts menu on a device where you're already signed in. They stop working once that Gmail session expires, usually within about an hour.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code export modal -->
+  <div id="codeExportOverlay" class="overlay">
+    <div class="modal-box">
+      <h2>Sign-in code</h2>
+      <p>Copy this and paste it into the "Use a sign-in code" option on another device. It only works while your current Gmail session stays valid, usually about an hour.</p>
+      <textarea id="codeOutput" class="code-textarea" readonly></textarea>
+      <button class="btn primary" style="width:100%; margin-top:10px;" onclick="copyExportCode()">Copy code</button>
+      <div class="other-options-link" style="margin-top:14px;" onclick="closeCodeExportModal()">Close</div>
+    </div>
+  </div>
+
+  <script>
+    const SCOPES = "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email";
+    const CLIENT_ID = "150167267776-4p30kghhgubv8n18jcd53tq1u41cbhkv.apps.googleusercontent.com";
+    const STORAGE_KEY = "mailviewer_accounts";
+    const ACTIVE_KEY = "mailviewer_active_email";
+    const PAGE_SIZE = 20;
+
+    let tokenClient;
+    let accounts = {};
+    let activeEmail = null;
+    let allItems = [];
+
+    // Pagination state
+    let pageHistory = [];       // stack of previous page tokens
+    let currentPageToken = null;
+    let nextPageToken = null;
+    let pageNumber = 1;
+
+    // ---- Storage ----
+
+    function loadAccountsFromStorage() {
+      try { accounts = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+      catch (e) { accounts = {}; }
+      activeEmail = localStorage.getItem(ACTIVE_KEY) || null;
+    }
+
+    function persistAccounts() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+      if (activeEmail) localStorage.setItem(ACTIVE_KEY, activeEmail);
+    }
+
+    function setStatus(text) { document.getElementById('status').innerText = text; }
+
+    // ---- OAuth (Identity Services token client) ----
+
+    function getTokenClient() {
+      if (!tokenClient) {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: () => {},
+        });
+      }
+      return tokenClient;
+    }
+
+    function requestNewAccount() {
+      const client = getTokenClient();
+      client.callback = async (tokenResponse) => {
+        if (tokenResponse.error) { setStatus("Sign-in was cancelled or failed."); return; }
+        const email = await fetchEmailForToken(tokenResponse.access_token);
+        if (!email) { setStatus("Could not read account email."); return; }
+        accounts[email] = {
+          accessToken: tokenResponse.access_token,
+          expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
+        };
+        activeEmail = email;
+        persistAccounts();
+        closeSigninModal();
+        refreshUiForSignedIn();
+      };
+      client.requestAccessToken({ prompt: "consent select_account" });
+    }
+
+    function silentRefresh(email) {
+      return new Promise((resolve) => {
+        const client = getTokenClient();
+        client.callback = (tokenResponse) => {
+          if (tokenResponse.error) { resolve(false); return; }
+          accounts[email] = {
+            accessToken: tokenResponse.access_token,
+            expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
+          };
+          persistAccounts();
+          resolve(true);
+        };
+        client.requestAccessToken({ prompt: "", hint: email });
+      });
+    }
+
+    async function fetchEmailForToken(token) {
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const data = await res.json();
+        return data.email || null;
+      } catch (e) { return null; }
+    }
+
+    async function ensureValidToken(email) {
+      const acc = accounts[email];
+      if (acc && acc.expiresAt - Date.now() > 60000) return acc.accessToken;
+      const ok = await silentRefresh(email);
+      return ok ? accounts[email].accessToken : null;
+    }
+
+    // ---- Sign-in modal & method switching ----
+
+    function openSigninModal() {
+      document.getElementById('signinOverlay').classList.add('open');
+    }
+
+    function closeSigninModal() {
+      document.getElementById('signinOverlay').classList.remove('open');
+      document.getElementById('otherOptionsMenu').style.display = 'none';
+      document.getElementById('legacyBlock').style.display = 'none';
+      document.getElementById('codeBlock').style.display = 'none';
+      document.getElementById('otherOptionsLink').innerText = 'Other sign-in options';
+    }
+
+    function toggleOtherOptions() {
+      const menu = document.getElementById('otherOptionsMenu');
+      const isOpen = menu.style.display !== 'none';
+      menu.style.display = isOpen ? 'none' : 'block';
+      document.getElementById('otherOptionsLink').innerText = isOpen ? 'Other sign-in options' : 'Hide options';
+      if (isOpen) {
+        document.getElementById('legacyBlock').style.display = 'none';
+        document.getElementById('codeBlock').style.display = 'none';
+      }
+    }
+
+    function showCodeBlock() {
+      document.getElementById('otherOptionsMenu').style.display = 'none';
+      document.getElementById('legacyBlock').style.display = 'none';
+      document.getElementById('codeBlock').style.display = 'block';
+    }
+
+    // ---- Method 1: native Google account chooser ("Continue as…") ----
+
+    let gsiInitializedForPrompt = false;
+
+    function ensureGsiInitialized() {
+      if (gsiInitializedForPrompt) return;
+      gsiInitializedForPrompt = true;
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleOneTapCredential,
+        auto_select: false,
+        use_fedcm_for_prompt: true
+      });
+    }
+
+    function triggerGoogleChooser() {
+      ensureGsiInitialized();
+      closeSigninModal();
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed && notification.isNotDisplayed()) {
+          setStatus("Google's account chooser didn't appear (often blocked until you interact with the page once, or dismissed too recently). Try again or use another method.");
+          openSigninModal();
+        } else if (notification.isSkippedMoment && notification.isSkippedMoment()) {
+          openSigninModal();
+        }
+      });
+    }
+
+    function decodeJwtEmail(credential) {
+      try {
+        const payload = credential.split('.')[1];
+        let base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
+        const json = decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(json).email || null;
+      } catch (e) { return null; }
+    }
+
+    function handleOneTapCredential(response) {
+      const email = decodeJwtEmail(response.credential);
+      if (!email) { setStatus("Could not read account from Google."); return; }
+      setStatus("Confirming Gmail access for " + email + "...");
+      const client = getTokenClient();
+      client.callback = (tokenResponse) => {
+        if (tokenResponse.error) {
+          setStatus("Could not get Gmail access. Try 'Continue with Google' instead.");
+          return;
+        }
+        accounts[email] = {
+          accessToken: tokenResponse.access_token,
+          expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
+        };
+        activeEmail = email;
+        persistAccounts();
+        refreshUiForSignedIn();
+      };
+      client.requestAccessToken({ prompt: "", hint: email });
+    }
+
+    // ---- Method 2: legacy Google Sign-In (gapi.auth2 / g-signin2) ----
+
+    let legacyRendered = false;
+
+    function showLegacyBlock() {
+      document.getElementById('otherOptionsMenu').style.display = 'none';
+      document.getElementById('codeBlock').style.display = 'none';
+      document.getElementById('legacyBlock').style.display = 'block';
+      if (window.gapi && gapi.load) {
+        gapi.load('signin2', renderLegacyButton);
+      } else {
+        setTimeout(() => {
+          if (window.gapi && gapi.load) gapi.load('signin2', renderLegacyButton);
+          else document.getElementById('legacyHint').innerText =
+            "Legacy Google Sign-In failed to load — Google has deprecated this library, so this is expected in most modern browsers. Use one of the other methods instead.";
+        }, 900);
+      }
+    }
+
+    function renderLegacyButton() {
+      if (legacyRendered) return;
+      legacyRendered = true;
+      try {
+        gapi.signin2.render('legacyButtonSlot', {
+          scope: 'email',
+          width: 220,
+          height: 40,
+          theme: 'dark',
+          onsuccess: onLegacySignIn,
+          onfailure: onLegacyFailure
+        });
+      } catch (e) {
+        onLegacyFailure();
+      }
+    }
+
+    function onLegacyFailure() {
+      document.getElementById('legacyHint').innerText =
+        "The rendered button failed to load — trying the older manual auth2 method instead…";
+      tryLegacyManualFallback();
+    }
+
+    // Older still: gapi.auth2.init() + a plain button that calls signIn()
+    // directly, instead of Google's auto-rendered widget. Sometimes this
+    // works when the auto-rendered button doesn't, since it skips Google's
+    // styling/script layer — but it's just as deprecated, so it may fail too.
+    function tryLegacyManualFallback() {
+      if (!window.gapi || !gapi.load) {
+        document.getElementById('legacyHint').innerText =
+          "Legacy Google Sign-In failed to load entirely — Google has deprecated this library, so this is expected in most modern browsers. Use one of the other methods instead.";
+        return;
+      }
+      gapi.load('auth2', () => {
+        try {
+          const authInstance = gapi.auth2.getAuthInstance() || gapi.auth2.init({ client_id: CLIENT_ID, scope: 'email' });
+          const slot = document.getElementById('legacyButtonSlot');
+          slot.innerHTML = '';
+          const btn = document.createElement('button');
+          btn.className = 'btn primary';
+          btn.style.width = '220px';
+          btn.innerText = 'Sign in (manual auth2)';
+          btn.onclick = () => {
+            authInstance.signIn().then((googleUser) => {
+              onLegacySignIn(googleUser);
+            }).catch(() => {
+              document.getElementById('legacyHint').innerText =
+                "Manual auth2 sign-in also failed — this whole library is deprecated by Google. Use one of the other methods instead.";
+            });
+          };
+          slot.appendChild(btn);
+          document.getElementById('legacyHint').innerText =
+            "Using the manual auth2 fallback since the standard legacy button didn't load.";
+        } catch (e) {
+          document.getElementById('legacyHint').innerText =
+            "Legacy Google Sign-In failed to initialize entirely — Google has deprecated this library. Use one of the other methods instead.";
+        }
+      });
+    }
+
+    function onLegacySignIn(googleUser) {
+      const profile = googleUser.getBasicProfile();
+      const email = profile.getEmail();
+      setStatus("Confirming Gmail access for " + email + "...");
+      const client = getTokenClient();
+      client.callback = (tokenResponse) => {
+        if (tokenResponse.error) { setStatus("Could not get Gmail access."); return; }
+        accounts[email] = {
+          accessToken: tokenResponse.access_token,
+          expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
+        };
+        activeEmail = email;
+        persistAccounts();
+        closeSigninModal();
+        refreshUiForSignedIn();
+      };
+      client.requestAccessToken({ prompt: "", hint: email });
+    }
+
+    // ---- Method 3: sign-in code (session transfer between devices) ----
+
+    function openCodeExportModal() {
+      const acc = accounts[activeEmail];
+      if (!acc) return;
+      const payload = { email: activeEmail, accessToken: acc.accessToken, expiresAt: acc.expiresAt };
+      document.getElementById('codeOutput').value = btoa(JSON.stringify(payload));
+      document.getElementById('codeExportOverlay').classList.add('open');
+    }
+
+    function closeCodeExportModal() {
+      document.getElementById('codeExportOverlay').classList.remove('open');
+    }
+
+    function copyExportCode() {
+      const box = document.getElementById('codeOutput');
+      box.select();
+      navigator.clipboard.writeText(box.value).then(() => {
+        setStatus("Code copied. Paste it on the other device within about an hour.");
+      }).catch(() => {
+        setStatus("Could not copy automatically — select the text and copy manually.");
+      });
+    }
+
+    async function signInWithCode() {
+      const raw = document.getElementById('codeInput').value.trim();
+      if (!raw) { setStatus("Paste a sign-in code first."); return; }
+      let payload;
+      try { payload = JSON.parse(atob(raw)); }
+      catch (e) { setStatus("That code doesn't look valid."); return; }
+      if (!payload.email || !payload.accessToken || !payload.expiresAt) {
+        setStatus("That code doesn't look valid.");
+        return;
+      }
+      if (payload.expiresAt - Date.now() < 30000) {
+        setStatus("That code has expired. Get a fresh one from the other device, or sign in with Google directly.");
+        return;
+      }
+      accounts[payload.email] = { accessToken: payload.accessToken, expiresAt: payload.expiresAt };
+      activeEmail = payload.email;
+      persistAccounts();
+      closeSigninModal();
+      refreshUiForSignedIn();
+    }
+
+    // ---- Accounts menu ----
+
+    function toggleAccountsMenu() {
+      const menu = document.getElementById('accountsMenu');
+      menu.classList.toggle('open');
+      if (menu.classList.contains('open')) renderAccountsMenu();
+    }
+
+    function renderAccountsMenu() {
+      const menu = document.getElementById('accountsMenu');
+      menu.innerHTML = '';
+      Object.keys(accounts).forEach((email) => {
+        const row = document.createElement('div');
+        row.className = 'account-row' + (email === activeEmail ? ' active' : '');
+        row.innerHTML = '<span class="email">' + escapeHtml(email) + '</span>' +
+          (email === activeEmail ? '<span class="tag">active</span>' : '');
+        row.onclick = () => switchAccount(email);
+        menu.appendChild(row);
+      });
+
+      const addRow = document.createElement('div');
+      addRow.className = 'menu-action';
+      addRow.innerText = '+ Add account';
+      addRow.onclick = () => { toggleAccountsMenu(); openSigninModal(); };
+      menu.appendChild(addRow);
+
+      const codeRow = document.createElement('div');
+      codeRow.className = 'menu-action';
+      codeRow.innerText = 'Get sign-in code';
+      codeRow.onclick = () => { toggleAccountsMenu(); openCodeExportModal(); };
+      menu.appendChild(codeRow);
+
+      const signOutRow = document.createElement('div');
+      signOutRow.className = 'menu-action';
+      signOutRow.innerText = 'Remove ' + activeEmail;
+      signOutRow.onclick = () => removeActiveAccount();
+      menu.appendChild(signOutRow);
+    }
+
+    async function switchAccount(email) {
+      toggleAccountsMenu();
+      activeEmail = email;
+      persistAccounts();
+      resetPagination();
+      showList();
+      document.getElementById('emailList').innerHTML = '<div class="loading-row">Loading messages...</div>';
+      const token = await ensureValidToken(email);
+      if (!token) {
+        setStatus("Could not sign back into " + email + ". Try adding it again.");
+        return;
+      }
+      setStatus("Connected as " + email + ".");
+      loadPage(null);
+    }
+
+    function removeActiveAccount() {
+      delete accounts[activeEmail];
+      const remaining = Object.keys(accounts);
+      activeEmail = remaining.length ? remaining[0] : null;
+      persistAccounts();
+      toggleAccountsMenu();
+      if (activeEmail) switchAccount(activeEmail);
+      else { localStorage.removeItem(ACTIVE_KEY); refreshUiForSignedOut(); }
+    }
+
+    function refreshUiForSignedIn() {
+      document.getElementById('authBtn').style.display = 'none';
+      document.getElementById('accountsBtn').style.display = 'inline-block';
+      document.getElementById('accountsBtn').innerText = activeEmail + ' ▾';
+      setStatus("Connected as " + activeEmail + ".");
+      resetPagination();
+      document.getElementById('emailList').innerHTML = '<div class="loading-row">Loading messages...</div>';
+      loadPage(null);
+    }
+
+    function refreshUiForSignedOut() {
+      document.getElementById('authBtn').style.display = 'inline-block';
+      document.getElementById('accountsBtn').style.display = 'none';
+      document.getElementById('emailList').innerHTML = '<div class="empty-row">Sign in to see your messages here.</div>';
+      document.getElementById('paginationWrap').style.display = 'none';
+      document.getElementById('countLabel').innerText = '';
+      showList();
+      setStatus("Signed out.");
+    }
+
+    // ---- Helpers ----
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.innerText = str == null ? "" : str;
+      return div.innerHTML;
+    }
+
+    function getHeader(headers, name) {
+      const h = headers.find(h => h.name.toLowerCase() === name.toLowerCase());
+      return h ? h.value : "";
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr || "";
+      const now = new Date();
+      const sameDay = d.toDateString() === now.toDateString();
+      if (sameDay) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function decodeBase64Url(data) {
+      if (!data) return "";
+      let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) base64 += '=';
+      try {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return new TextDecoder('utf-8').decode(bytes);
+      } catch (e) { return ""; }
+    }
+
+    function extractBodyContent(payload) {
+      let plain = null, html = null;
+      function walk(part) {
+        if (!part) return;
+        if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+          plain = plain || decodeBase64Url(part.body.data);
+        } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+          html = html || decodeBase64Url(part.body.data);
+        }
+        if (part.parts) for (const p of part.parts) walk(p);
+      }
+      walk(payload);
+      if (html) return { content: html, isHtml: true };
+      if (plain) return { content: plain, isHtml: false };
+      if (payload.body && payload.body.data) return { content: decodeBase64Url(payload.body.data), isHtml: false };
+      return { content: "(no readable content)", isHtml: false };
+    }
+
+    function buildEmailDoc(content, isHtml) {
+      const body = isHtml ? content : ('<pre>' + escapeHtml(content) + '</pre>');
+      return '<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank">' +
+        '<style>' +
+        'html,body{margin:0;padding:0;}' +
+        'body{font-family:"Segoe UI","Segoe UI Web",Tahoma,Geneva,Verdana,sans-serif;font-size:13.5px;line-height:1.6;color:#1a1a1a;word-wrap:break-word;padding:2px;}' +
+        'img{max-width:100%;height:auto;}' +
+        'a{color:#1a1a1a;}' +
+        'pre{white-space:pre-wrap;font-family:inherit;margin:0;}' +
+        'table{max-width:100%;}' +
+        '</style></head><body>' + body + '</body></html>';
+    }
+
+    function cleanSender(from) {
+      const match = from.match(/^"?([^"<]*)"?\s*<.*>$/);
+      if (match && match[1].trim()) return match[1].trim();
+      return from;
+    }
+
+    function extractEmailAddress(from) {
+      const match = from.match(/<([^>]+)>/);
+      return match ? match[1].trim().toLowerCase() : from.trim().toLowerCase();
+    }
+
+    function isAuthVerified(headerVal) {
+      if (!headerVal) return false;
+      const val = headerVal.toLowerCase();
+      return val.includes('dkim=pass') && val.includes('spf=pass');
+    }
+
+    async function authHeader() {
+      const token = await ensureValidToken(activeEmail);
+      if (!token) throw new Error("not signed in");
+      return { Authorization: "Bearer " + token };
+    }
+
+    // ---- Pagination ----
+
+    function resetPagination() {
+      pageHistory = [];
+      currentPageToken = null;
+      nextPageToken = null;
+      pageNumber = 1;
+      allItems = [];
+    }
+
+    function goNextPage() {
+      if (!nextPageToken) return;
+      pageHistory.push(currentPageToken);
+      pageNumber++;
+      loadPage(nextPageToken);
+    }
+
+    function goPrevPage() {
+      if (pageHistory.length === 0) return;
+      const prevToken = pageHistory.pop();
+      pageNumber--;
+      loadPage(prevToken);
+    }
+
+    function updatePaginationControls() {
+      document.getElementById('paginationWrap').style.display = 'flex';
+      document.getElementById('prevPageBtn').disabled = pageHistory.length === 0;
+      document.getElementById('nextPageBtn').disabled = !nextPageToken;
+      document.getElementById('pageLabel').innerText = 'Page ' + pageNumber;
+    }
+
+    // ---- Gmail data ----
+
+    async function loadPage(token) {
+      try {
+        setStatus("Loading messages...");
+        let url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=" + PAGE_SIZE;
+        if (token) url += "&pageToken=" + token;
+
+        const headers = await authHeader();
+        const listRes = await fetch(url, { headers });
+        const listData = await listRes.json();
+        nextPageToken = listData.nextPageToken || null;
+        currentPageToken = token;
+
+        if (!listData.messages) {
+          document.getElementById('emailList').innerHTML = '<div class="empty-row">No messages found.</div>';
+          document.getElementById('countLabel').innerText = '';
+          document.getElementById('paginationWrap').style.display = 'none';
+          setStatus("No messages found.");
+          return;
+        }
+
+        document.getElementById('emailList').innerHTML = '<div class="loading-row">Loading messages...</div>';
+
+        // Fetch headers for every message in parallel so the list loads fast;
+        // full bodies are only fetched later when a specific email is opened.
+        const detailPromises = listData.messages.map(async (msg) => {
+          const h = await authHeader();
+          const res = await fetch(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + msg.id +
+            "?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject" +
+            "&metadataHeaders=Date&metadataHeaders=Authentication-Results",
+            { headers: h }
+          );
+          const detail = await res.json();
+          const hdrs = (detail.payload && detail.payload.headers) || [];
+          return {
+            id: msg.id,
+            from: getHeader(hdrs, 'From'),
+            subject: getHeader(hdrs, 'Subject') || "(no subject)",
+            date: getHeader(hdrs, 'Date'),
+            snippet: detail.snippet || "",
+            unread: (detail.labelIds || []).includes('UNREAD'),
+            verified: isAuthVerified(getHeader(hdrs, 'Authentication-Results'))
+          };
+        });
+
+        allItems = await Promise.all(detailPromises);
+        setStatus("Loaded " + allItems.length + " messages.");
+        renderList();
+        updatePaginationControls();
+      } catch (err) {
+        setStatus("Error loading messages: " + err.message);
+      }
+    }
+
+    function renderList() {
+      const container = document.getElementById('emailList');
+      container.innerHTML = '';
+      document.getElementById('countLabel').innerText = allItems.length + (allItems.length === 1 ? ' message' : ' messages');
+
+      for (const item of allItems) {
+        const senderName = cleanSender(item.from);
+
+        const el = document.createElement('div');
+        el.className = 'email-item' + (item.unread ? ' unread' : '');
+        el.dataset.id = item.id;
+        el.innerHTML =
+          '<div class="dot"></div>' +
+          '<div class="from-wrap">' +
+            '<span class="from">' + escapeHtml(senderName) + '</span>' +
+            (item.verified ? verifiedBadgeSvg() : '') +
+          '</div>' +
+          '<span class="subject-wrap"><span class="subject">' + escapeHtml(item.subject) + '</span><span class="dash">—</span>' + escapeHtml(item.snippet) + '</span>' +
+          '<span class="date">' + escapeHtml(formatDate(item.date)) + '</span>';
+        el.addEventListener('click', () => openEmail(item.id, el, item.verified));
+        container.appendChild(el);
+      }
+    }
+
+    function verifiedBadgeSvg() {
+      return '<span class="verified-wrap" title="This sender passed SPF and DKIM authentication checks">' +
+        '<svg class="verified-badge" viewBox="0 0 24 24" fill="currentColor">' +
+        '<path d="M12 2l2.4 2.2 3.2-.6.9 3.1 3.1.9-.6 3.2L23 12l-2.2 2.4.6 3.2-3.1.9-.9 3.1-3.2-.6L12 23l-2.4-2.2-3.2.6-.9-3.1-3.1-.9.6-3.2L1 12l2.2-2.4-.6-3.2 3.1-.9.9-3.1 3.2.6L12 2z"/>' +
+        '<path d="M9.3 12.6l1.8 1.8 3.6-3.9" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+    }
+
+    function showList() {
+      document.getElementById('detailView').style.display = 'none';
+      document.getElementById('listView').style.display = 'block';
+    }
+
+    function showDetail() {
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'block';
+    }
+
+    function toggleDetailMeta() {
+      const dropdown = document.getElementById('detailMetaDropdown');
+      const isOpen = dropdown.style.display !== 'none';
+      dropdown.style.display = isOpen ? 'none' : 'block';
+      document.getElementById('detailCaret').innerText = isOpen ? '▾' : '▴';
+    }
+
+    function extractDomain(addr) {
+      if (!addr) return '';
+      const m = addr.match(/@([^\s>]+)/);
+      return m ? m[1].toLowerCase().replace(/[>\s]+$/, '') : '';
+    }
+
+    function extractDkimDomain(dkimHeader) {
+      if (!dkimHeader) return '';
+      const m = dkimHeader.match(/[\s;]d=([^;]+);/);
+      return m ? m[1].trim() : '';
+    }
+
+    async function openEmail(id, el, verified) {
+      el.classList.remove('unread');
+      showDetail();
+
+      document.getElementById('detailSubject').innerText = "Loading...";
+      document.getElementById('detailSenderName').innerText = "";
+      document.getElementById('detailSenderEmail').innerText = "";
+      document.getElementById('detailVerifiedSlot').innerHTML = "";
+      document.getElementById('detailToShort').innerText = "";
+      document.getElementById('detailMetaDropdown').style.display = 'none';
+      document.getElementById('detailCaret').innerText = '▾';
+      const frame = document.getElementById('detailBodyFrame');
+      frame.srcdoc = '';
+
+      try {
+        const headers = await authHeader();
+        const res = await fetch(
+          "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full",
+          { headers }
+        );
+        const detail = await res.json();
+        const hdrs = (detail.payload && detail.payload.headers) || [];
+
+        const fromRaw = getHeader(hdrs, 'From');
+        const toRaw = getHeader(hdrs, 'To');
+        const dateRaw = getHeader(hdrs, 'Date');
+        const subjectRaw = getHeader(hdrs, 'Subject') || "(no subject)";
+        const replyToRaw = getHeader(hdrs, 'Reply-To');
+        const returnPathRaw = getHeader(hdrs, 'Return-Path');
+        const dkimRaw = getHeader(hdrs, 'DKIM-Signature');
+
+        const senderName = cleanSender(fromRaw);
+        const senderEmail = extractEmailAddress(fromRaw);
+
+        document.getElementById('detailSubject').innerText = subjectRaw;
+        document.getElementById('detailSenderName').innerText = senderName;
+        document.getElementById('detailSenderEmail').innerText = '<' + senderEmail + '>';
+        if (verified) document.getElementById('detailVerifiedSlot').innerHTML = verifiedBadgeSvg();
+
+        const toIsMe = activeEmail && toRaw.toLowerCase().includes(activeEmail.toLowerCase());
+        document.getElementById('detailToShort').innerText = toIsMe ? 'me' : (extractEmailAddress(toRaw) || toRaw);
+
+        document.getElementById('metaFrom').innerText = fromRaw;
+        document.getElementById('metaTo').innerText = toRaw;
+        document.getElementById('metaDate').innerText = dateRaw;
+        document.getElementById('metaSubject').innerText = subjectRaw;
+
+        if (replyToRaw) {
+          document.getElementById('metaReplyTo').innerText = replyToRaw;
+          document.getElementById('metaReplyToRow').style.display = 'flex';
+        } else {
+          document.getElementById('metaReplyToRow').style.display = 'none';
+        }
+
+        const mailedByDomain = extractDomain(returnPathRaw) || extractDomain(fromRaw);
+        if (mailedByDomain) {
+          document.getElementById('metaMailedBy').innerText = mailedByDomain;
+          document.getElementById('metaMailedByRow').style.display = 'flex';
+        } else {
+          document.getElementById('metaMailedByRow').style.display = 'none';
+        }
+
+        const signedByDomain = extractDkimDomain(dkimRaw);
+        if (signedByDomain) {
+          document.getElementById('metaSignedBy').innerText = signedByDomain;
+          document.getElementById('metaSignedByRow').style.display = 'flex';
+        } else {
+          document.getElementById('metaSignedByRow').style.display = 'none';
+        }
+
+        const { content, isHtml } = extractBodyContent(detail.payload);
+        frame.onload = () => {
+          try { frame.style.height = frame.contentDocument.documentElement.scrollHeight + 'px'; }
+          catch (e) { frame.style.height = '400px'; }
+        };
+        frame.srcdoc = buildEmailDoc(content, isHtml);
+      } catch (err) {
+        document.getElementById('detailSubject').innerText = "Error loading message";
+        frame.srcdoc = buildEmailDoc(String(err.message || err), false);
+      }
+    }
+
+    // Close accounts menu when clicking outside it
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('accountsWrap');
+      if (!wrap.contains(e.target)) {
+        document.getElementById('accountsMenu').classList.remove('open');
+      }
+    });
+
+    // ---- Theme ----
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.getElementById('themeToggleBtn').innerText = theme === 'dark' ? 'Light mode' : 'Dark mode';
+      localStorage.setItem('mailviewer_theme', theme);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    // ---- Boot ----
+    window.addEventListener('load', () => {
+      // Default is always light unless the person has explicitly chosen dark before.
+      const savedTheme = localStorage.getItem('mailviewer_theme') || 'light';
+      applyTheme(savedTheme);
+
+      loadAccountsFromStorage();
+      const emails = Object.keys(accounts);
+      if (emails.length === 0) { openSigninModal(); return; }
+      if (!activeEmail || !accounts[activeEmail]) activeEmail = emails[0];
+      refreshUiForSignedIn();
+    });
+  </script>
+
+</body>
+</html>
